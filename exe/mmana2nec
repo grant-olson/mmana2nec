@@ -1,3 +1,9 @@
 #!/usr/bin/env ruby
 
-puts "FOO"
+require 'mmana2nec'
+
+file_name = ARGV[0]
+
+raise "NEED FILE" if file_name.nil?
+
+puts Mmana2nec::MmanaProcessor.new.process_file(file_name).inspect
