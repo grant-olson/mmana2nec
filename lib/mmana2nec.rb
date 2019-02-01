@@ -39,15 +39,30 @@ module Mmana2nec
     end
     
     def process_wires
-      intermediate_format.wires = process_list
+      intermediate_format.wires = process_list.map { |data|
+        x1, y1, z1, x2, y2, z2, diameter, segments = data
+        {end_one: {x: x1, y: y1, z: z1},
+         end_two: {x: x2, y: y2, z: z2},
+         diameter: diameter,
+         segments: segments
+        }
+      }
     end
 
     def process_source
-      intermediate_format.sources = process_list
+      intermediate_format.sources = process_list.map { |data|
+        connection, phase, volts = data
+        {connection: connection, phase: phase, volts: volts}
+      }
+                                                       
     end
 
     def process_load
       intermediate_format.loads = process_list
+
+      if intermediate_format.loads.length > 0
+        raise "Didn't deal with loads yet!"
+      end
     end
 
     def process_segmentation
@@ -55,7 +70,7 @@ module Mmana2nec
     end
 
     def process_g_h_m_r_azel_x
-      all_this_junk = extract_data
+      ground_type, h, m, impedance, azimuth, elevation, x = extract_data
       # Figure this out later!
     end
     
