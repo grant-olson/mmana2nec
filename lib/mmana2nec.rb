@@ -27,7 +27,7 @@ module Mmana2nec
 
         end_one = w[:end_one]
         end_two = w[:end_two]
-        segments = 2 # Hack
+        segments = w[:segments]
         gw = ["GW", index, segments, end_one[:x], end_one[:y], end_one[:z], end_two[:x], end_two[:y], end_two[:z],  "%f" % (w[:diameter] / 2.0)]
         file.puts(gw.join(" "))
         
@@ -82,6 +82,22 @@ module Mmana2nec
     def process_wires
       intermediate_format.wires = process_list.map { |data|
         x1, y1, z1, x2, y2, z2, diameter, segments = data
+
+        if segments == -1
+          wire_length = Math.sqrt( (x2-x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
+          
+          frequency = 7.0
+          wavelength = 300.0 / frequency
+          segment_size = wavelength / (2 * 20) # Half wavelength / 20. What is correct fudge factor?
+
+          segments = (wire_length / segment_size).to_i
+          segments = 1 if segments <= 0
+        #  segments += 1 if segments % 2 == 0 # Always odd so we can do center source
+      #    segments = 3 if segments < 3 # Always at least 3 so we can add source to beginning, middle, or center
+        elsif segments < 0
+          raise "Can't process segment type #{segments}"
+        end
+        
         {end_one: {x: x1, y: y1, z: z1},
          end_two: {x: x2, y: y2, z: z2},
          diameter: diameter,
@@ -92,7 +108,7 @@ module Mmana2nec
 
     def process_source
       intermediate_format.sources = process_list.map { |data|
-        connection, voltage, phase = data
+        connection, phase, voltage = data
         raise "Unexpected connection value #{connection.inspect}" if !connection.start_with?("w")
         wire = connection[1..-2].to_i
         segment = connection[-1]
@@ -115,7 +131,8 @@ module Mmana2nec
     end
 
     def process_segmentation
-      intermediate_format.segmentation = extract_data
+      dm1, dm2, sc, ec = extract_data
+      intermediate_format.segmentation = {dm1: dm1, dm2: dm2, sc: sc, ec: ec}
     end
 
     def process_g_h_m_r_azel_x
