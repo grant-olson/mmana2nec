@@ -4,12 +4,13 @@ module Mmana2nec
   class Error < StandardError; end
 
   class IntermediateFormat
-    attr_accessor :wires, :sources, :loads, :segmentation
+    attr_accessor :wires, :sources, :loads, :segmentation, :frequency
     def initialize
       @wires = []
       @sources = []
       @loads = []
       @segmentation = []
+      @frequency ||= 7.0
     end
   end
 
@@ -35,7 +36,7 @@ module Mmana2nec
       file.puts("GE 0")
 
       # Frequency
-      file.puts("FR 0 1 0 0 7 0")
+      file.puts("FR 0 1 0 0 #{intermediate_format.frequency} 0")
       
       # Source
 
@@ -83,30 +84,49 @@ module Mmana2nec
     end
     
     def process_wires
-      intermediate_format.wires = process_list.map { |data|
+      wire_lengths = {}
+      wires = []
+      
+      process_list.each_with_index do |data, index|
         x1, y1, z1, x2, y2, z2, diameter, segments = data
 
-        if segments == -1
-          wire_length = Math.sqrt( (x2-x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
+        wire_length = Math.sqrt( (x2-x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
+        wire_lengths[index] = wire_length
           
-          frequency = 7.0
-          wavelength = 300.0 / frequency
-          segment_size = wavelength / (2 * 20) # Half wavelength / 20. What is correct fudge factor?
-
-          segments = (wire_length / segment_size).to_i
-          segments = 1 if segments <= 0
-        #  segments += 1 if segments % 2 == 0 # Always odd so we can do center source
-      #    segments = 3 if segments < 3 # Always at least 3 so we can add source to beginning, middle, or center
-        elsif segments < 0
+        if segments < -1
           raise "Can't process segment type #{segments}"
         end
         
-        {end_one: {x: x1, y: y1, z: z1},
-         end_two: {x: x2, y: y2, z: z2},
-         diameter: diameter,
-         segments: segments
+        wires << {end_one: {x: x1, y: y1, z: z1},
+                  end_two: {x: x2, y: y2, z: z2},
+                  diameter: diameter,
+                  segments: segments
         }
-      }
+
+      end
+      
+      wire_lengths = wire_lengths.values.sort
+      shortest_wire = wire_lengths[0]
+      longest_wire = wire_lengths[-1]
+
+      if longest_wire >= (shortest_wire * 5) #must use shortest wire or smaller as segment size
+        segment_length = shortest_wire
+      else # can use any segment size
+        wavelength = 300.0 / intermediate_format.frequency
+        segment_length = wavelength / (2 * 20) # Half wavelength / 20. What is correct fudge factor?
+      end
+          
+      wires.each_with_index do |wire, index|
+        if wire[:segments] == -1
+          wire_length = wire_lengths[index]
+          segments = (wire_length / segment_length).to_i
+          segments += 1 if (segments * segment_length) != wire_length
+          wire[:segments] = segments
+        end
+      end
+        
+
+      intermediate_format.wires = wires
     end
 
     def process_source
