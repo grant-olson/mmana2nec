@@ -34,6 +34,9 @@ module Mmana2nec
       end
       file.puts("GE 0")
 
+      # Frequency
+      file.puts("FR 0 1 0 0 7 0")
+      
       # Source
 
       intermediate_format.sources.each do |source|
