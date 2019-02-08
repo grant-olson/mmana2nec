@@ -36,11 +36,17 @@ module Mmana2nec
 
       # Source
 
-      excitation_type = 0
-      wire = 1
-      segment = 1
-      source = ["EX", excitation_type, wire, segment, 0, 1.0, 0.0]
-      file.puts(source.join(" "))
+      intermediate_format.sources.each do |source|
+        excitation_type = 0 #Only supported type now
+        wire = source[:wire]
+        segment = source[:segment]
+        voltage = source[:voltage]
+        phase = source[:phase]
+      
+        source = ["EX", excitation_type, wire, segment, 0, voltage, phase]
+        
+        file.puts(source.join(" "))
+      end
       # END
       file.puts("EN")
       
@@ -86,8 +92,16 @@ module Mmana2nec
 
     def process_source
       intermediate_format.sources = process_list.map { |data|
-        connection, phase, volts = data
-        {connection: connection, phase: phase, volts: volts}
+        connection, voltage, phase = data
+        raise "Unexpected connection value #{connection.inspect}" if !connection.start_with?("w")
+        wire = connection[1..-2].to_i
+        segment = connection[-1]
+
+        # TODO: Figure out center and end once we have real segments
+        raise "Don't know how to handle segment type #{segment}" if segment != "b"
+        segment = 1
+        
+        {wire: wire, segment: segment, phase: phase, voltage: voltage}
       }
                                                        
     end
