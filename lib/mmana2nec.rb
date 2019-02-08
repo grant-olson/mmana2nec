@@ -33,7 +33,7 @@ module Mmana2nec
         file.puts(gw.join(" "))
         
       end
-      file.puts("GE 0")
+      file.puts("GE 1")
 
       # Frequency
       file.puts("FR 0 1 0 0 #{intermediate_format.frequency} 0")
