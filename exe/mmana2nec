@@ -2,12 +2,4 @@
 
 require 'mmana2nec'
 
-file_name = ARGV[0]
-
-raise "NEED FILE" if file_name.nil?
-
-intermediate_format = Mmana2nec::MmanaProcessor.new.process_file(file_name)
-
-new_file = file_name.split(".")[0] + ".nec"
-Mmana2nec::NecProcessor.write(intermediate_format, new_file)
-
+Mmana2nec::CLI.mmana2nec()
