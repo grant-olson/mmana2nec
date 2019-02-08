@@ -12,6 +12,8 @@ Gem::Specification.new do |spec|
   spec.summary       = "Utility to convert various antenna model formats."
   spec.homepage      = "https://github.com/grant-olson/mmana2nec"
 
+  spec.license = "BSD 3 Clause"
+
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
   # to allow pushing to a single host or delete this section to allow pushing to any host.
   if spec.respond_to?(:metadata)
